@@ -27,7 +27,7 @@ def _build_prompt(lead: Lead, buzzwords) -> str:
     return (
         "You are an outreach assistant. Return ONLY valid JSON with keys: "
         "subject_A, body_A, subject_B, body_B, followup_1, followup_2. "
-        "Constraints: body_A and body_B <= 120 words, no emojis, "
+        "Constraints: body_A and body_B <= 120 words, no emojis, use only ASCII characters, "
         f"no buzzwords: {buzzwords}. Tone: warm, respectful, direct, non-salesy. "
         "Goal: invite a short intro conversation. No meta commentary. "
         f"Lead: first_name={lead.first_name}, last_name={lead.last_name}, role={lead.role}, "
@@ -39,7 +39,7 @@ def _build_strict_prompt(lead: Lead, buzzwords) -> str:
     # Tighter instruction for retry attempts
     return (
         _build_prompt(lead, buzzwords)
-        + " Return only JSON with double quotes and no trailing text."
+        + " Return only JSON with double quotes and no trailing text. Any emoji or non-ASCII character makes the response invalid."
     )
 
 

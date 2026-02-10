@@ -23,6 +23,11 @@ pip install -r requirements.txt
 python run_agent.py --input data/leads.csv --out outputs --campaign "week6-demo" --dry-run
 ```
 
+## Desktop App
+```bash
+python app_desktop.py
+```
+
 ## Outputs
 - `outputs/leads_clean.csv`
 - `outputs/outreach_pack.json`

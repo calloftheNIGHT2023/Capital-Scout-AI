@@ -1,0 +1,11 @@
+model: gpt-4o-mini
+temperature: 0.4
+max_tokens: 450
+word_limit: 120
+buzzwords:
+  - disrupt
+  - game-changing
+  - revolutionary
+  - unprecedented
+  - synergy
+  - world-class

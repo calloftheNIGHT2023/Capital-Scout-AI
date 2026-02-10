@@ -1,0 +1,17 @@
+2026-02-10 13:26:54,674 [INFO] Loading leads from data/leads.csv
+2026-02-10 13:26:54,684 [INFO] Loaded 3 leads
+2026-02-10 13:26:54,684 [INFO] Wrote cleaned leads: outputs\leads_clean.csv
+2026-02-10 13:26:54,684 [INFO] Generating messages for alex@stealthai.com
+2026-02-10 13:27:16,860 [INFO] Generating messages for sarah@finflow.co
+2026-02-10 13:27:32,522 [ERROR] Generation failed for sarah@finflow.co: Emoji detected
+2026-02-10 13:29:11,587 [INFO] Loading leads from data/leads.csv
+2026-02-10 13:29:11,588 [INFO] Loaded 3 leads
+2026-02-10 13:29:11,588 [INFO] Wrote cleaned leads: outputs\leads_clean.csv
+2026-02-10 13:29:11,589 [INFO] Generating messages for alex@stealthai.com
+2026-02-10 13:29:11,589 [INFO] Generating messages for sarah@finflow.co
+2026-02-10 13:29:11,589 [INFO] Generating messages for daniel@nbcapital.vc
+2026-02-10 13:29:11,593 [INFO] Wrote outreach_pack.json
+2026-02-10 13:29:11,593 [INFO] Wrote Instantly import CSV
+2026-02-10 13:29:11,593 [INFO] Wrote Airtable import CSV
+2026-02-10 13:29:11,593 [INFO] Wrote campaign plan
+2026-02-10 13:29:11,593 [INFO] Dry run mode enabled. No external sends performed.

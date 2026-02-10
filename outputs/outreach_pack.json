@@ -1,0 +1,62 @@
+[
+  {
+    "lead": {
+      "first_name": "Alex",
+      "last_name": "Chen",
+      "role": "Founder",
+      "company": "Stealth AI Startup",
+      "industry": "AI Infrastructure",
+      "stage": "Pre-Seed",
+      "email": "alex@stealthai.com",
+      "source": "Apollo"
+    },
+    "messages": {
+      "subject_A": "[DEMO COPY] Quick intro, Alex",
+      "body_A": "[DEMO COPY] Hi Alex, I track early teams in AI Infrastructure. Would you be open to a short intro chat next week?",
+      "subject_B": "[DEMO COPY] Stealth AI Startup intro?",
+      "body_B": "[DEMO COPY] Hi Alex, I track early teams in AI Infrastructure. Would you be open to a short intro chat next week?",
+      "followup_1": "[DEMO COPY] Following up, Alex. Happy to share context if helpful.",
+      "followup_2": "[DEMO COPY] Final check-in, Alex. Open to a brief intro?"
+    }
+  },
+  {
+    "lead": {
+      "first_name": "Sarah",
+      "last_name": "Miller",
+      "role": "Founder",
+      "company": "FinFlow",
+      "industry": "FinTech",
+      "stage": "Seed",
+      "email": "sarah@finflow.co",
+      "source": "Apollo"
+    },
+    "messages": {
+      "subject_A": "[DEMO COPY] Quick intro, Sarah",
+      "body_A": "[DEMO COPY] Hi Sarah, I track early teams in FinTech. Would you be open to a short intro chat next week?",
+      "subject_B": "[DEMO COPY] FinFlow intro?",
+      "body_B": "[DEMO COPY] Hi Sarah, I track early teams in FinTech. Would you be open to a short intro chat next week?",
+      "followup_1": "[DEMO COPY] Following up, Sarah. Happy to share context if helpful.",
+      "followup_2": "[DEMO COPY] Final check-in, Sarah. Open to a brief intro?"
+    }
+  },
+  {
+    "lead": {
+      "first_name": "Daniel",
+      "last_name": "Park",
+      "role": "Investor",
+      "company": "NorthBridge Capital",
+      "industry": "Venture Capital",
+      "stage": "Series A+",
+      "email": "daniel@nbcapital.vc",
+      "source": "Apollo"
+    },
+    "messages": {
+      "subject_A": "[DEMO COPY] Quick intro, Daniel",
+      "body_A": "[DEMO COPY] Hi Daniel, I track early teams in Venture Capital. Would you be open to a short intro chat next week?",
+      "subject_B": "[DEMO COPY] NorthBridge Capital intro?",
+      "body_B": "[DEMO COPY] Hi Daniel, I track early teams in Venture Capital. Would you be open to a short intro chat next week?",
+      "followup_1": "[DEMO COPY] Following up, Daniel. Happy to share context if helpful.",
+      "followup_2": "[DEMO COPY] Final check-in, Daniel. Open to a brief intro?"
+    }
+  }
+]

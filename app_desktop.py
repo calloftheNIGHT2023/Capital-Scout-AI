@@ -2,17 +2,20 @@ import queue
 import subprocess
 import sys
 import threading
+import os
 import tkinter as tk
+from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
 
-def _run_command(cmd, output_queue):
+def _run_command(cmd, output_queue, cwd=None):
     try:
         proc = subprocess.Popen(
             cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
+            cwd=cwd,
         )
         for line in proc.stdout:
             output_queue.put(line)
@@ -25,22 +28,29 @@ def _run_command(cmd, output_queue):
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Capital Scout AI Desktop")
-        self.geometry("900x620")
-        self.minsize(860, 580)
+        self.title("Capital Scout AI")
+        self.geometry("900x600")
+        self.minsize(780, 540)
 
         self.colors = {
-            "bg": "#0f172a",
-            "panel": "#111827",
-            "muted": "#94a3b8",
-            "accent": "#22d3ee",
-            "accent_dark": "#0ea5b7",
-            "text": "#e5e7eb",
-            "border": "#1f2937",
-            "success": "#22c55e",
+            "bg": "#f3f3f3",
+            "topbar": "#cfd8e3",
+            "text": "#1f2937",
+            "muted": "#6b7280",
+            "upload": "#c3a457",
+            "upload_active": "#b79643",
+            "success": "#1fb57f",
+            "success_active": "#17a271",
+            "slate": "#6a7c95",
+            "slate_active": "#5a6d85",
+            "white": "#ffffff",
         }
 
         self.output_queue = queue.Queue()
+        self.log_window = None
+        self.log_text = None
+        self.is_running = False
+        self.project_dir = Path(__file__).resolve().parent
 
         self.input_path = tk.StringVar(value="data/leads.csv")
         self.output_dir = tk.StringVar(value="outputs")
@@ -55,26 +65,13 @@ class App(tk.Tk):
         self.configure(bg=self.colors["bg"])
         style = ttk.Style(self)
         style.theme_use("clam")
-        style.configure(
-            "TFrame",
-            background=self.colors["bg"],
-        )
-        style.configure(
-            "Card.TFrame",
-            background=self.colors["panel"],
-            relief="flat",
-        )
+
+        style.configure("TFrame", background=self.colors["bg"])
         style.configure(
             "TLabel",
-            background=self.colors["panel"],
-            foreground=self.colors["text"],
-            font=("Segoe UI", 10),
-        )
-        style.configure(
-            "Title.TLabel",
             background=self.colors["bg"],
             foreground=self.colors["text"],
-            font=("Segoe UI Semibold", 18),
+            font=("Segoe UI", 10),
         )
         style.configure(
             "Subtitle.TLabel",
@@ -83,92 +80,155 @@ class App(tk.Tk):
             font=("Segoe UI", 10),
         )
         style.configure(
+            "Field.TLabel",
+            background=self.colors["bg"],
+            foreground="#334155",
+            font=("Segoe UI Semibold", 9),
+        )
+
+        style.configure(
             "TEntry",
-            fieldbackground="#0b1220",
+            fieldbackground=self.colors["white"],
             foreground=self.colors["text"],
-            bordercolor=self.colors["border"],
-            insertcolor=self.colors["text"],
-            relief="flat",
-            padding=6,
-        )
-        style.map(
-            "Accent.TButton",
-            background=[("active", self.colors["accent_dark"]), ("!disabled", self.colors["accent"])],
-            foreground=[("!disabled", "#001018")],
-        )
-        style.configure(
-            "Accent.TButton",
-            font=("Segoe UI Semibold", 10),
-            padding=(12, 6),
-            relief="flat",
-            background=self.colors["accent"],
-            foreground="#001018",
-        )
-        style.configure(
-            "TButton",
-            font=("Segoe UI", 10),
-            padding=(10, 6),
+            padding=5,
+            relief="solid",
+            borderwidth=1,
         )
         style.configure(
             "TCheckbutton",
-            background=self.colors["panel"],
+            background=self.colors["bg"],
             foreground=self.colors["text"],
+            font=("Segoe UI", 10),
+        )
+
+        style.configure(
+            "Upload.TButton",
+            font=("Segoe UI Semibold", 10),
+            padding=(18, 10),
+            relief="flat",
+            background=self.colors["upload"],
+            foreground=self.colors["white"],
+        )
+        style.map(
+            "Upload.TButton",
+            background=[("active", self.colors["upload_active"]), ("!disabled", self.colors["upload"])],
+            foreground=[("!disabled", self.colors["white"])],
+        )
+
+        style.configure(
+            "Start.TButton",
+            font=("Segoe UI Semibold", 11),
+            padding=(16, 10),
+            relief="flat",
+            background=self.colors["success"],
+            foreground=self.colors["white"],
+        )
+        style.map(
+            "Start.TButton",
+            background=[("active", self.colors["success_active"]), ("!disabled", self.colors["success"])],
+            foreground=[("!disabled", self.colors["white"])],
+        )
+
+        style.configure(
+            "View.TButton",
+            font=("Segoe UI Semibold", 11),
+            padding=(16, 10),
+            relief="flat",
+            background=self.colors["slate"],
+            foreground=self.colors["white"],
+        )
+        style.map(
+            "View.TButton",
+            background=[("active", self.colors["slate_active"]), ("!disabled", self.colors["slate"])],
+            foreground=[("!disabled", self.colors["white"])],
+        )
+
+        style.configure(
+            "Small.TButton",
+            font=("Segoe UI", 9),
+            padding=(10, 6),
+            relief="flat",
         )
 
     def _build_ui(self):
-        header = ttk.Frame(self)
-        header.pack(fill="x", padx=20, pady=(16, 6))
-        ttk.Label(header, text="Capital Scout AI", style="Title.TLabel").pack(anchor="w")
-        ttk.Label(
-            header,
-            text="Outreach automation demo • CSV in, campaigns out",
-            style="Subtitle.TLabel",
-        ).pack(anchor="w", pady=(2, 0))
+        top_bar = tk.Frame(self, bg=self.colors["topbar"], height=26)
+        top_bar.pack(fill="x", side="top")
+        top_bar.pack_propagate(False)
 
-        card = ttk.Frame(self, style="Card.TFrame")
-        card.pack(fill="x", padx=20, pady=10)
+        body = ttk.Frame(self)
+        body.pack(fill="both", expand=True, padx=14, pady=(12, 14))
 
-        form = ttk.Frame(card, style="Card.TFrame")
-        form.pack(fill="x", padx=16, pady=16)
+        header = ttk.Frame(body)
+        header.pack(fill="x", pady=(0, 14))
+        ttk.Label(header, text="Capital Scout AI", font=("Segoe UI Semibold", 19)).pack(side="left")
+        ttk.Label(header, text="v1.0.0", style="Subtitle.TLabel").pack(side="right", pady=(4, 0))
 
-        ttk.Label(form, text="Input CSV").grid(row=0, column=0, sticky="w")
-        ttk.Entry(form, textvariable=self.input_path, width=62).grid(row=0, column=1, padx=8, pady=4)
-        ttk.Button(form, text="Browse", command=self._pick_input).grid(row=0, column=2, pady=4)
+        action_row = ttk.Frame(body)
+        action_row.pack(fill="x", pady=(0, 8))
+        ttk.Button(
+            action_row,
+            text="  ^   Upload CSV File",
+            style="Upload.TButton",
+            command=self._pick_input,
+        ).pack(side="left")
+        ttk.Button(action_row, text="Browse Output", style="Small.TButton", command=self._pick_output).pack(
+            side="left", padx=8
+        )
 
-        ttk.Label(form, text="Output Dir").grid(row=1, column=0, sticky="w")
-        ttk.Entry(form, textvariable=self.output_dir, width=62).grid(row=1, column=1, padx=8, pady=4)
-        ttk.Button(form, text="Browse", command=self._pick_output).grid(row=1, column=2, pady=4)
+        self.file_hint = ttk.Label(body, text="", style="Subtitle.TLabel")
+        self.file_hint.pack(anchor="w", pady=(0, 8))
+        self.status_label = ttk.Label(body, text="Status: Idle", style="Subtitle.TLabel")
+        self.status_label.pack(anchor="w", pady=(0, 8))
 
-        ttk.Label(form, text="Campaign").grid(row=2, column=0, sticky="w")
-        ttk.Entry(form, textvariable=self.campaign, width=62).grid(row=2, column=1, padx=8, pady=4)
+        form = ttk.Frame(body)
+        form.pack(fill="x", pady=(0, 12))
+        form.columnconfigure(1, weight=1)
+
+        ttk.Label(form, text="Input CSV", style="Field.TLabel").grid(row=0, column=0, sticky="w", pady=3)
+        ttk.Entry(form, textvariable=self.input_path).grid(row=0, column=1, sticky="ew", padx=(8, 0), pady=3)
+
+        ttk.Label(form, text="Output Dir", style="Field.TLabel").grid(row=1, column=0, sticky="w", pady=3)
+        ttk.Entry(form, textvariable=self.output_dir).grid(row=1, column=1, sticky="ew", padx=(8, 0), pady=3)
+
+        ttk.Label(form, text="Campaign", style="Field.TLabel").grid(row=2, column=0, sticky="w", pady=3)
+        ttk.Entry(form, textvariable=self.campaign).grid(row=2, column=1, sticky="ew", padx=(8, 0), pady=3)
 
         ttk.Checkbutton(form, text="Dry Run (no OpenAI calls)", variable=self.dry_run).grid(
-            row=3, column=1, sticky="w", pady=(8, 2)
+            row=3, column=1, sticky="w", padx=(8, 0), pady=(6, 0)
         )
 
-        btns = ttk.Frame(card, style="Card.TFrame")
-        btns.pack(fill="x", padx=16, pady=(0, 14))
-        ttk.Button(btns, text="Run", style="Accent.TButton", command=self._run).pack(side="left")
-        ttk.Button(btns, text="Clear Log", command=self._clear_log).pack(side="left", padx=8)
+        ttk.Label(
+            body,
+            text="Preview Copy (A/B Test)",
+            font=("Segoe UI Semibold", 12),
+            foreground="#243042",
+        ).pack(anchor="w")
 
-        log_panel = ttk.Frame(self, style="Card.TFrame")
-        log_panel.pack(fill="both", expand=True, padx=20, pady=(4, 16))
-        ttk.Label(log_panel, text="Run Output").pack(anchor="w", padx=16, pady=(12, 6))
+        preview = tk.Frame(body, bg=self.colors["bg"])
+        preview.pack(fill="both", expand=True, pady=(8, 14))
 
-        self.log = tk.Text(
-            log_panel,
-            height=18,
-            bg="#0b1220",
-            fg=self.colors["text"],
-            insertbackground=self.colors["text"],
-            relief="flat",
+        bottom = ttk.Frame(body)
+        bottom.pack(fill="x")
+        bottom.columnconfigure(0, weight=1)
+        bottom.columnconfigure(1, weight=1)
+
+        self.start_btn = ttk.Button(bottom, text="Start Generation", style="Start.TButton", command=self._run)
+        self.start_btn.grid(
+            row=0, column=0, sticky="ew", padx=(0, 4)
         )
-        self.log.pack(fill="both", expand=True, padx=16, pady=(0, 16))
+        ttk.Button(bottom, text="View Logs", style="View.TButton", command=self._open_logs).grid(
+            row=0, column=1, sticky="ew", padx=(4, 0)
+        )
+        ttk.Button(bottom, text="Clear Logs", style="Small.TButton", command=self._clear_logs).grid(
+            row=1, column=1, sticky="e", pady=(8, 0)
+        )
 
     def _pick_input(self):
         path = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
         if path:
             self.input_path.set(path)
+            shown = path if len(path) <= 82 else f"...{path[-79:]}"
+            self.file_hint.configure(text=f"Selected: {shown}")
 
     def _pick_output(self):
         path = filedialog.askdirectory()
@@ -176,17 +236,21 @@ class App(tk.Tk):
             self.output_dir.set(path)
 
     def _run(self):
+        if self.is_running:
+            self._open_logs()
+            return
+
         input_path = self.input_path.get().strip()
         out_dir = self.output_dir.get().strip()
         campaign = self.campaign.get().strip()
 
         if not input_path or not out_dir or not campaign:
-            messagebox.showerror("Missing fields", "Please fill in Input CSV, Output Dir, and Campaign.")
+            messagebox.showerror("Missing fields", "Please provide input/output/campaign.")
             return
 
         cmd = [
             sys.executable,
-            "run_agent.py",
+            str(self.project_dir / "run_agent.py"),
             "--input",
             input_path,
             "--out",
@@ -197,14 +261,54 @@ class App(tk.Tk):
         if self.dry_run.get():
             cmd.append("--dry-run")
 
-        self.log.insert("end", f"> {' '.join(cmd)}\n")
-        self.log.see("end")
+        self.is_running = True
+        self.start_btn.state(["disabled"])
+        self.status_label.configure(text="Status: Running...")
+        self._open_logs()
+        self._append_log(f"> {' '.join(cmd)}\n")
+        self._append_log("[info] Running generation...\n")
 
-        t = threading.Thread(target=_run_command, args=(cmd, self.output_queue), daemon=True)
+        t = threading.Thread(
+            target=_run_command,
+            args=(cmd, self.output_queue),
+            kwargs={"cwd": str(self.project_dir)},
+            daemon=True,
+        )
         t.start()
 
-    def _clear_log(self):
-        self.log.delete("1.0", "end")
+    def _open_logs(self):
+        if self.log_window and self.log_window.winfo_exists():
+            self.log_window.lift()
+            return
+
+        self.log_window = tk.Toplevel(self)
+        self.log_window.title("Run Logs")
+        self.log_window.geometry("780x420")
+        self.log_window.configure(bg=self.colors["bg"])
+
+        frame = ttk.Frame(self.log_window)
+        frame.pack(fill="both", expand=True, padx=12, pady=12)
+
+        self.log_text = tk.Text(
+            frame,
+            bg="#ffffff",
+            fg="#1f2937",
+            relief="solid",
+            bd=1,
+            wrap="word",
+            insertbackground="#1f2937",
+        )
+        self.log_text.pack(fill="both", expand=True)
+
+    def _clear_logs(self):
+        if self.log_window and self.log_window.winfo_exists():
+            self.log_text.delete("1.0", "end")
+
+    def _append_log(self, text):
+        if not self.log_window or not self.log_window.winfo_exists():
+            return
+        self.log_text.insert("end", text)
+        self.log_text.see("end")
 
     def _poll_output(self):
         while True:
@@ -213,9 +317,31 @@ class App(tk.Tk):
             except queue.Empty:
                 break
             else:
-                self.log.insert("end", line)
-                self.log.see("end")
+                self._append_log(line)
+                if line.strip().startswith("[exit code"):
+                    self.is_running = False
+                    self.start_btn.state(["!disabled"])
+                    if "[exit code 0]" in line:
+                        self.status_label.configure(text="Status: Completed")
+                        self._open_output_folder()
+                    else:
+                        self.status_label.configure(text="Status: Failed")
         self.after(100, self._poll_output)
+
+    def _open_output_folder(self):
+        output_path = Path(self.output_dir.get().strip()).expanduser()
+        if not output_path.is_absolute():
+            output_path = self.project_dir / output_path
+        try:
+            output_path.mkdir(parents=True, exist_ok=True)
+            if sys.platform.startswith("win"):
+                os.startfile(str(output_path))
+            elif sys.platform == "darwin":
+                subprocess.Popen(["open", str(output_path)])
+            else:
+                subprocess.Popen(["xdg-open", str(output_path)])
+        except Exception as exc:
+            self._append_log(f"[warn] Could not open output folder: {exc}\n")
 
 
 if __name__ == "__main__":
